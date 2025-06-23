@@ -1,0 +1,37 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
+    <id>com.horcrux.ssethi.goland-inlay-type-hints</id>
+
+    <!-- Public plugin name should be written in Title Case.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
+    <name>Goland - Inlay Type Hints</name>
+
+    <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+    <vendor url="https://github.com/sudo-nan0-RaySK">github.com/sudo-nan0-RaySK</vendor>
+
+    <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
+    <description><![CDATA[
+    Inlay type hints for Golang, similar to IntelliJ IDEA's automatic type inference inlay hints for var usage in Java.
+  ]]></description>
+
+    <resource-bundle>messages.Bundle</resource-bundle>
+
+    <!-- Product and plugin compatibility requirements.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <depends>com.intellij.modules.platform</depends>
+    <!-- Requires the Go plugin -->
+    <depends>org.jetbrains.plugins.go</depends>
+
+    <!-- Extension points defined by the plugin.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <extensions defaultExtensionNs="com.intellij">\
+        <!-- Registering the inlay hints provider -->
+        <codeInsight.declarativeInlayProvider group="TYPES_GROUP"
+                                              implementationClass="com.horcrux.ssethi.golandinlaytypehints.GoInalyTypeHintsProvider"
+                                              isEnabledByDefault="true"
+                                              language="go"
+                                              nameKey="go.type.hints.provider" providerId="go.type.hints.provider"/>
+    </extensions>
+</idea-plugin>

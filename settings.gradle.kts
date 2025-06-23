@@ -1,0 +1,1 @@
+rootProject.name = "goland-inlay-type-hints"
