@@ -41,7 +41,7 @@ public class GoInalyTypeHintsProvider implements InlayHintsProvider {
     private static Stream<String> toTypeTextStream(GoType goType) {
       if (goType.getNavigationElement() instanceof Navigatable) {
         log.info(
-            "GoInalyTypeHintsProvider goType {} is a navigatable", goType.getPresentationText());
+            "GoInalyTypeHintsProvider goType {} is a navigable", goType.getPresentationText());
       }
       if (goType instanceof GoFunctionType goFunctionType) {
         // Handle function types
