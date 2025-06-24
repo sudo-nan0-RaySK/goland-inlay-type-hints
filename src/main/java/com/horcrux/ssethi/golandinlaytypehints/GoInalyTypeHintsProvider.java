@@ -38,18 +38,6 @@ public class GoInalyTypeHintsProvider implements InlayHintsProvider {
 
   private static class GoInlayTypeHintsCollector implements SharedBypassCollector {
 
-    private static Stream<String> toTypeTextStream(GoType goType) {
-      if (goType.getNavigationElement() instanceof Navigatable) {
-        log.info(
-            "GoInalyTypeHintsProvider goType {} is a navigable", goType.getPresentationText());
-      }
-      if (goType instanceof GoFunctionType goFunctionType) {
-        // Handle function types
-        return Stream.of(goFunctionType.getText());
-      }
-      return Arrays.stream(goType.getText().split(","));
-    }
-
     @Override
     public void collectFromElement(
         @NotNull PsiElement psiElement, @NotNull InlayTreeSink inlayTreeSink) {
