@@ -1,20 +1,16 @@
 package com.horcrux.ssethi.golandinlaytypehints;
 
 import com.goide.GoLanguage;
-import com.goide.psi.GoFunctionType;
-import com.goide.psi.GoType;
-import com.goide.psi.GoVarDefinition;
-import com.goide.psi.GoVarSpec;
+import com.goide.psi.*;
 import com.goide.psi.impl.GoLightType;
 import com.google.common.collect.Streams;
 import com.intellij.codeInsight.hints.declarative.*;
 import com.intellij.openapi.editor.Editor;
-import com.intellij.pom.Navigatable;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.SmartPointerManager;
 import groovy.util.logging.Slf4j;
-import java.util.Arrays;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -38,9 +34,24 @@ public class GoInalyTypeHintsProvider implements InlayHintsProvider {
 
   private static class GoInlayTypeHintsCollector implements SharedBypassCollector {
 
+    private static @NotNull GoType getRefinedUnderlyingIndirectType(GoType goType) {
+      return getGoTypeRecursive(goType);
+    }
+
+    private static @NotNull GoType getGoTypeRecursive(@NotNull GoType goType) {
+      return switch (goType) {
+        case GoArrayOrSliceType arrayType -> getGoTypeRecursive(arrayType.getType());
+        case GoPointerType pointerType ->
+            Objects.nonNull(pointerType.getType())
+                ? getGoTypeRecursive(pointerType.getType())
+                : goType;
+        default -> goType;
+      };
+    }
+
     @Override
     public void collectFromElement(
-        @NotNull PsiElement psiElement, @NotNull InlayTreeSink inlayTreeSink) {
+        @NotNull final PsiElement psiElement, @NotNull InlayTreeSink inlayTreeSink) {
       if (psiElement.getLanguage().is(GoLanguage.INSTANCE)
           && psiElement instanceof GoVarSpec goVarSpec) {
 
@@ -83,24 +94,33 @@ public class GoInalyTypeHintsProvider implements InlayHintsProvider {
                   HintFormat.Companion.getDefault(),
                   ptb -> {
                     ptb.text(": ", null);
-                    InlayActionData actionData =
-                        switch (goType) {
-                          case Navigatable navigableElement ->
-                              new InlayActionData(
-                                  new PsiPointerInlayActionPayload(
-                                      SmartPointerManager.getInstance(psiElement.getProject())
-                                          .createSmartPsiElementPointer(
-                                              goType
-                                                  .getContextlessUnderlyingType()
-                                                  .getNavigationElement())),
-                                  PsiPointerInlayActionNavigationHandler.HANDLER_ID);
-                          default -> null;
-                        };
-                    ptb.text(goType.getPresentationText(), actionData);
+                    if (goType instanceof GoMapType goMapType) {
+                      ptb.text("map[", null);
+                      embedClickableTypeHintString(psiElement, ptb, goMapType.getKeyType());
+                      ptb.text("]", null);
+                      embedClickableTypeHintString(psiElement, ptb, goMapType.getValueType());
+                    } else {
+                      embedClickableTypeHintString(psiElement, ptb, goType);
+                    }
                     return Unit.INSTANCE;
                   });
             });
       }
+    }
+
+    private void embedClickableTypeHintString(
+        @NotNull final PsiElement psiElement, PresentationTreeBuilder ptb, GoType goType) {
+      GoType refinedUnderlyingIndirectType = getRefinedUnderlyingIndirectType(goType);
+      InlayActionData actionData =
+          new InlayActionData(
+              new PsiPointerInlayActionPayload(
+                  SmartPointerManager.getInstance(psiElement.getProject())
+                      .createSmartPsiElementPointer(
+                          refinedUnderlyingIndirectType
+                              .getContextlessUnderlyingType()
+                              .getNavigationElement())),
+              PsiPointerInlayActionNavigationHandler.HANDLER_ID);
+      ptb.text(goType.getPresentationText(), actionData);
     }
   }
 }
