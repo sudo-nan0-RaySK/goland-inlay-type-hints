@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.horcrux.ssethi"
-version = "1.0-SNAPSHOT"
+version = "1.1-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -20,7 +20,7 @@ dependencies {
     intellijPlatform {
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
         // Add necessary plugin dependencies for compilation here, example:
-        goland("2025.1.2")
+        goland("2025.1.3")
         bundledPlugin("org.jetbrains.plugins.go")
     }
 
