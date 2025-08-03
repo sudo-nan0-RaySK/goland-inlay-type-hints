@@ -23,7 +23,9 @@ import org.slf4j.LoggerFactory;
 
 @Slf4j
 public class GoInalyTypeHintsProvider implements InlayHintsProvider {
+  @SuppressWarnings("unused")
   public static final String PROVIDER_ID = "go.type.hints.provider";
+
   private static final Logger log = LoggerFactory.getLogger(GoInalyTypeHintsProvider.class);
 
   @Override
@@ -49,63 +51,89 @@ public class GoInalyTypeHintsProvider implements InlayHintsProvider {
       };
     }
 
+    private static @NotNull List<GoType> resolveGoTypesFromGoTypeOwnerStream(
+        Stream<? extends GoTypeOwner> goTypeInfoStream) {
+      return goTypeInfoStream
+          .map(exper -> exper.getGoType(null))
+          .filter(Objects::nonNull)
+          .flatMap(
+              goType -> {
+                if (goType
+                    instanceof
+                    GoLightType.LightTypeList goLightTypeList) { // Handle light type lists
+                  return goLightTypeList.getTypeList().stream();
+                } // Handle other types
+                return Stream.of(goType);
+              })
+          .toList();
+    }
+
     @Override
     public void collectFromElement(
         @NotNull final PsiElement psiElement, @NotNull InlayTreeSink inlayTreeSink) {
-      if (psiElement.getLanguage().is(GoLanguage.INSTANCE)
-          && psiElement instanceof GoVarSpec goVarSpec) {
-
-        List<GoType> resolvedGoTypes =
-            goVarSpec.getExpressionList().stream()
-                .map(exper -> exper.getGoType(null))
-                .filter(Objects::nonNull)
-                .flatMap(
-                    goType -> {
-                      if (goType
-                          instanceof
-                          GoLightType.LightTypeList goLightTypeList) { // Handle light type lists
-                        return goLightTypeList.getTypeList().stream();
-                      } // Handle other types
-                      return Stream.of(goType);
-                    })
-                .toList();
-        List<GoVarDefinition> varDefs = goVarSpec.getVarDefinitionList();
-
-        if (resolvedGoTypes.size() != varDefs.size()) {
-          GoInalyTypeHintsProvider.log.warn(
-              "Type names count {} does not match variable definitions count {} in GoVarSpec: {}",
-              resolvedGoTypes.size(),
-              varDefs.size(),
-              goVarSpec.getText());
-          return; // Skip if counts do not match
-        }
-
-        Stream<Pair<GoVarDefinition, GoType>> zippedVarDefAndTypes =
-            Streams.zip(varDefs.stream(), resolvedGoTypes.stream(), Pair::of);
-
-        zippedVarDefAndTypes.forEach(
-            pair -> {
-              final GoVarDefinition varDef = pair.getLeft();
-              final GoType goType = pair.getRight();
-              inlayTreeSink.addPresentation(
-                  new InlineInlayPosition(varDef.getTextRange().getEndOffset(), true, 0),
-                  null,
-                  goType.getText(),
-                  HintFormat.Companion.getDefault(),
-                  ptb -> {
-                    ptb.text(": ", null);
-                    if (goType instanceof GoMapType goMapType) {
-                      ptb.text("map[", null);
-                      embedClickableTypeHintString(psiElement, ptb, goMapType.getKeyType());
-                      ptb.text("]", null);
-                      embedClickableTypeHintString(psiElement, ptb, goMapType.getValueType());
-                    } else {
-                      embedClickableTypeHintString(psiElement, ptb, goType);
-                    }
-                    return Unit.INSTANCE;
-                  });
-            });
+      if (!psiElement.getLanguage().is(GoLanguage.INSTANCE)) {
+        return; // Only process Go language elements
       }
+      switch (psiElement) {
+        case GoRangeClause rangeClause -> {
+          final List<GoType> resolvedGoTypes =
+              resolveGoTypesFromGoTypeOwnerStream(rangeClause.getVarDefinitionList().stream());
+          final List<GoVarDefinition> varDefs = rangeClause.getVarDefinitionList();
+          deduceInlayTypeHintsRenderInfo(
+              psiElement, inlayTreeSink, resolvedGoTypes, varDefs, psiElement.getText());
+        }
+        case GoVarSpec goVarSpec -> {
+          final List<GoType> resolvedGoTypes =
+              resolveGoTypesFromGoTypeOwnerStream(goVarSpec.getExpressionList().stream());
+          final List<GoVarDefinition> varDefs = goVarSpec.getVarDefinitionList();
+          deduceInlayTypeHintsRenderInfo(
+              psiElement, inlayTreeSink, resolvedGoTypes, varDefs, goVarSpec.getText());
+        }
+        default -> {}
+      }
+    }
+
+    private void deduceInlayTypeHintsRenderInfo(
+        @NotNull PsiElement psiElement,
+        @NotNull InlayTreeSink inlayTreeSink,
+        final List<GoType> resolvedGoTypes,
+        final List<GoVarDefinition> varDefs,
+        final String psiElementText) {
+
+      if (resolvedGoTypes.size() != varDefs.size()) {
+        GoInalyTypeHintsProvider.log.warn(
+            "Type names count {} does not match variable definitions count {} in GoVarSpec: {}",
+            resolvedGoTypes.size(),
+            varDefs.size(),
+            psiElementText);
+        return;
+      }
+
+      Stream<Pair<GoVarDefinition, GoType>> zippedVarDefAndTypes =
+          Streams.zip(varDefs.stream(), resolvedGoTypes.stream(), Pair::of);
+
+      zippedVarDefAndTypes.forEach(
+          pair -> {
+            final GoVarDefinition varDef = pair.getLeft();
+            final GoType goType = pair.getRight();
+            inlayTreeSink.addPresentation(
+                new InlineInlayPosition(varDef.getTextRange().getEndOffset(), true, 0),
+                null,
+                goType.getText(),
+                HintFormat.Companion.getDefault(),
+                ptb -> {
+                  ptb.text(": ", null);
+                  if (goType instanceof GoMapType goMapType) {
+                    ptb.text("map[", null);
+                    embedClickableTypeHintString(psiElement, ptb, goMapType.getKeyType());
+                    ptb.text("]", null);
+                    embedClickableTypeHintString(psiElement, ptb, goMapType.getValueType());
+                  } else {
+                    embedClickableTypeHintString(psiElement, ptb, goType);
+                  }
+                  return Unit.INSTANCE;
+                });
+          });
     }
 
     private void embedClickableTypeHintString(
