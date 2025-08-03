@@ -94,7 +94,7 @@ The type hints are clickable and will navigate to the type definition when click
 
 ## Version History
 
-### 1.2.0 (Latest Release)
+### 1.2-SNAPSHOT (Latest Release)
 - Support for range clause variable type hints
 
 ### 1.1-SNAPSHOT
@@ -103,6 +103,6 @@ The type hints are clickable and will navigate to the type definition when click
 - Bug fixes and enhancements
 - Clickable type hints for navigation to type definitions
 
-### 1.0.0 (Initial Release)
+### 1.0-SNAPSHOT (Initial Release)
 - Initial version of the plugin
 - Support for variable type hints in var declarations
