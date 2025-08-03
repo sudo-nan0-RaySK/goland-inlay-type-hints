@@ -1,0 +1,15 @@
+<ivy-module version="2.0">
+  <info organisation="bundledPlugin" module="org.jetbrains.plugins.go" revision="GO-251.26927.50"/>
+  <configurations>
+    <conf name="default" visibility="public"/>
+  </configurations>
+  <publications>
+    <artifact name="go-frontback" ext="jar" conf="default" url="plugins/go-plugin/lib"/>
+    <artifact name="go-plugin" ext="jar" conf="default" url="plugins/go-plugin/lib"/>
+    <artifact name="intellij.go.completionMlRanking" ext="jar" conf="default" url="plugins/go-plugin/lib/modules"/>
+  </publications>
+  <dependencies>
+    <dependency org="bundledModule" name="intellij.platform.vcs.impl" rev="GO-251.26927.50"/>
+    <dependency org="bundledPlugin" name="com.intellij.modules.json" rev="GO-251.26927.50"/>
+  </dependencies>
+</ivy-module>
