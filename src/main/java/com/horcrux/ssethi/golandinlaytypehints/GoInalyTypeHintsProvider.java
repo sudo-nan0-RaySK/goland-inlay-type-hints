@@ -3,6 +3,7 @@ package com.horcrux.ssethi.golandinlaytypehints;
 import com.goide.GoLanguage;
 import com.goide.psi.*;
 import com.goide.psi.impl.GoLightType;
+import com.goide.psi.impl.GoTypeUtil;
 import com.google.common.collect.Streams;
 import com.intellij.codeInsight.hints.declarative.*;
 import com.intellij.openapi.editor.Editor;
@@ -115,7 +116,14 @@ public class GoInalyTypeHintsProvider implements InlayHintsProvider {
       zippedVarDefAndTypes.forEach(
           pair -> {
             final GoVarDefinition varDef = pair.getLeft();
-            final GoType goType = pair.getRight();
+            final GoType expressionType = pair.getRight();
+            final GoType goType =
+                expressionType instanceof GoLightType.LightUntypedType
+                    ? GoTypeUtil.getDefaultType(varDef.getGoType(null))
+                    : expressionType;
+            if (goType == null) {
+              return;
+            }
             inlayTreeSink.addPresentation(
                 new InlineInlayPosition(varDef.getTextRange().getEndOffset(), true, 0),
                 null,
